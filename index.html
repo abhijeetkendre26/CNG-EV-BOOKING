@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Onkar Powerstation Booking System</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+        onerror="console.error('Failed to load Font Awesome CSS');">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"
+        onerror="console.error('Failed to load Google Fonts');">
+    <script src="https://cdn.tailwindcss.com" onerror="console.error('Failed to load Tailwind CSS');"></script>
+    <!-- Google Maps API -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA1rmbtpAuODUfTil95pbHo7EIwq7gPD4s&callback=initGoogleMap" async defer></script>
+</head>
+
+<body class="font-poppins bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white transition-colors duration-300">
+    <!-- Header -->
+    <header
+        class="bg-gradient-to-r from-indigo-600 to-blue-500 text-white p-4 flex items-center justify-between sticky top-0 z-50 relative">
+        <button id="sidebarToggle" class="text-2xl"><i class="fas fa-bars"></i></button>
+        <div class="flex-1 max-w-md mx-4">
+            <div class="relative">
+                <input type="text" id="locationInput" placeholder="Search city or state..."
+                    class="w-full p-2 rounded-lg text-gray-900 dark:text-white bg-white dark:bg-gray-700">
+                <button id="searchBtn"
+                    class="absolute right-0 top-0 h-full px-3 bg-teal-600 text-white rounded-r-lg hover:bg-teal-700"><i
+                        class="fas fa-search"></i></button>
+                <div id="searchSuggestions"
+                    class="absolute w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg mt-1 hidden z-50"></div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Sidebar -->
+    <aside id="sidebar"
+        class="fixed top-0 left-0 h-full w-64 bg-white dark:bg-gray-800 shadow-lg transform -translate-x-full transition-transform duration-300 z-20 isolation-isolate">
+        <div class="p-4 flex items-center justify-between">
+            <div class="text-xl font-semibold">Onkar Powerstation Booking System</div>
+            <button id="closeSidebar" class="text-xl"><i class="fas fa-times"></i></button>
+        </div>
+        <nav class="p-4">
+            <ul class="space-y-2">
+                <li><button id="homeLink"
+                        class="w-full text-left p-2 hover:bg-indigo-100 dark:hover:bg-indigo-900 rounded">Home</button>
+                </li>
+                <li>
+                    <div class="text-sm font-semibold mb-2">Filters</div>
+                    <button class="filter-tab w-full text-left p-2 bg-indigo-100 dark:bg-indigo-900 rounded"
+                        data-type="all">All</button>
+                    <button class="filter-tab w-full text-left p-2 hover:bg-indigo-100 dark:hover:bg-indigo-900 rounded"
+                        data-type="ev">EV</button>
+                    <button class="filter-tab w-full text-left p-2 hover:bg-indigo-100 dark:hover:bg-indigo-900 rounded"
+                        data-type="cng">CNG</button>
+                </li>
+                <li><button id="bookingHistoryLink"
+                        class="w-full text-left p-2 hover:bg-indigo-100 dark:hover:bg-indigo-900 rounded">Booking
+                        History</button></li>
+                <li><button id="manageVehiclesLink"
+                        class="w-full text-left p-2 hover:bg-indigo-100 dark:hover:bg-indigo-900 rounded hidden">Manage
+                        Vehicles</button></li>
+            </ul>
+        </nav>
+        <div class="p-4">
+            <div id="userInfo" class="hidden">
+                <div class="flex items-center gap-2 mb-2">
+                    <div id="userAvatar"
+                        class="w-8 h-8 bg-emerald-500 text-white rounded-full flex items-center justify-center"></div>
+                    <span id="userName"></span>
+                </div>
+                <button id="logoutBtn" class="w-full p-2 bg-gray-500 text-white rounded hover:bg-gray-600"><i
+                        class="fas fa-sign-out-alt mr-2"></i>Logout</button>
+            </div>
+            <button id="loginBtn" class="w-full p-2 bg-teal-600 text-white rounded hover:bg-teal-700"><i
+                    class="fas fa-sign-in-alt mr-2"></i>Login</button>
+            <button id="signupBtn" class="w-full p-2 bg-teal-600 text-white rounded hover:bg-teal-700 mt-2"><i
+                    class="fas fa-user-plus mr-2"></i>Sign Up</button>
+            <button id="themeToggle" class="w-full p-2 bg-gray-200 dark:bg-gray-700 rounded mt-2"><span
+                    id="themeIcon">🌙</span> Toggle Theme</button>
+        </div>
+    </aside>
+
+    <!-- Sidebar Overlay (Mobile) -->
+    <div id="sidebarOverlay" class="fixed inset-0 bg-black bg-opacity-50 hidden md:hidden z-10"></div>
+
+    <!-- Main Content -->
+    <main class="p-4 transition-all duration-300">
+        <div id="homeContent" class="flex flex-col md:flex-row gap-4">
+            <div class="md:w-1/2">
+                <div id="map" class="h-[50vh] sm:h-[60vh] md:h-[70vh] rounded-lg shadow-lg relative z-0">
+                    <input type="text" id="mapSearchInput" placeholder="Search on map..."
+                        class="absolute top-2 left-2 p-2 w-40 rounded-lg text-gray-900 dark:text-white bg-white dark:bg-gray-700">
+                    <div id="mapFallback"
+                        class="hidden absolute inset-0 flex items-center justify-center text-gray-500 dark:text-gray-400">
+                        Unable to load map. Please check your connection or try again later.
+                    </div>
+                </div>
+            </div>
+            <div id="stationsList" class="md:w-1/2 grid grid-cols-1 sm:grid-cols-2 gap-4 relative z-0">
+                <div id="stationsFallback" class="col-span-full text-center text-gray-500 dark:text-gray-400">
+                    Loading stations... If this persists, please refresh the page.
+                </div>
+            </div>
+        </div>
+        <div id="bookingHistoryContent" class="hidden">
+            <h2 class="text-2xl font-semibold mb-4">Booking History</h2>
+            <div id="timeline" class="space-y-4"></div>
+        </div>
+    </main>
+
+    <!-- Auth Modal -->
+    <div id="authModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-30">
+        <div
+            class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg max-w-md w-full transform scale-95 transition-transform duration-300">
+            <span id="closeAuthModal" class="float-right text-2xl cursor-pointer">×</span>
+            <div class="flex justify-center gap-2 mb-4">
+                <button
+                    class="auth-tab px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-lg active:bg-teal-600 active:text-white"
+                    data-tab="login">Login</button>
+                <button
+                    class="auth-tab px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-lg active:bg-teal-600 active:text-white"
+                    data-tab="register">Register</button>
+            </div>
+            <div id="loginForm" class="auth-form-container">
+                <h2 class="text-xl font-semibold mb-4">Login</h2>
+                <div class="text-rose-500 text-sm mb-2 hidden" id="loginError"></div>
+                <form>
+                    <div class="mb-4">
+                        <label for="loginEmail" class="block mb-1">Email</label>
+                        <input type="text" id="loginEmail" placeholder="Enter your email"
+                            class="w-full p-2 border rounded-lg text-gray-900 dark:text-white bg-white dark:bg-gray-700">
+                        <div class="text-rose-500 text-sm mt-1 hidden" id="loginEmailError"></div>
+                    </div>
+                    <div class="mb-4">
+                        <label for="loginPassword" class="block mb-1">Password</label>
+                        <input type="password" id="loginPassword" placeholder="Enter your password"
+                            class="w-full p-2 border rounded-lg text-gray-900 dark:text-white bg-white dark:bg-gray-700">
+                        <div class="text-rose-500 text-sm mt-1 hidden" id="loginPasswordError"></div>
+                    </div>
+                    <button type="submit" id="loginSubmitBtn"
+                        class="w-full p-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700">
+                        <span class="btn-text">Login</span>
+                        <span class="loading hidden">Loading...</span>
+                    </button>
+                </form>
+            </div>
+            <div id="registerForm" class="auth-form-container max-h-[70vh] overflow-y-auto">
+                <h2 class="text-xl font-semibold mb-4">Register</h2>
+                <div class="text-rose-500 text-sm mb-2 hidden" id="registerError"></div>
+                <form>
+                    <div class="mb-4">
+                        <label for="registerName" class="block mb-1">Full Name</label>
+                        <input type="text" id="registerName" placeholder="Enter your full name"
+                            class="w-full p-2 border rounded-lg text-gray-900 dark:text-white bg-white dark:bg-gray-700">
+                        <div class="text-rose-500 text-sm mt-1 hidden" id="registerNameError"></div>
+                    </div>
+                    <div class="mb-4">
+                        <label for="registerEmail" class="block mb-1">Email</label>
+                        <input type="email" id="registerEmail" placeholder="Enter your email"
+                            class="w-full p-2 border rounded-lg text-gray-900 dark:text-white bg-white dark:bg-gray-700">
+                        <div class="text-rose-500 text-sm mt-1 hidden" id="registerEmailError"></div>
+                    </div>
+                    <div class="mb-4">
+                        <label for="registerPassword" class="block mb-1">Password</label>
+                        <input type="password" id="registerPassword" placeholder="Enter your password"
+                            class="w-full p-2 border rounded-lg text-gray-900 dark:text-white bg-white dark:bg-gray-700">
+                        <div class="text-rose-500 text-sm mt-1 hidden" id="registerPasswordError"></div>
+                    </div>
+                    <div class="mb-4">
+                        <h3 class="text-lg font-semibold mb-2">Add Vehicles (1 Required, Up to 5)</h3>
+                        <div id="vehicleInputs">
+                            <div class="vehicle-input mb-2">
+                                <label class="block mb-1">Vehicle 1 (Required)</label>
+                                <input type="text"
+                                    class="vehicle-number w-full p-2 border rounded-lg text-gray-900 dark:text-white bg-white dark:bg-gray-700 mb-1"
+                                    placeholder="Vehicle Number (e.g., MH-12-AB-1234)" data-index="1">
+                                <select
+                                    class="vehicle-type w-full p-2 border rounded-lg text-gray-900 dark:text-white bg-white dark:bg-gray-700"
+                                    data-index="1">
+                                    <option value="">Select Type</option>
+                                    <option value="EV">EV</option>
+                                    <option value="CNG">CNG</option>
+                                </select>
+                                <div class="text-rose-500 text-sm mt-1 hidden" id="vehicle1Error"></div>
+                            </div>
+                            <div class="vehicle-input mb-2">
+                                <label class="block mb-1">Vehicle 2 (Optional)</label>
+                                <input type="text"
+                                    class="vehicle-number w-full p-2 border rounded-lg text-gray-900 dark:text-white bg-white dark:bg-gray-700 mb-1"
+                                    placeholder="Vehicle Number (e.g., MH-12-AB-1234)" data-index="2">
+                                <select
+                                    class="vehicle-type w-full p-2 border rounded-lg text-gray-900 dark:text-white bg-white dark:bg-gray-700"
+                                    data-index="2">
+                                    <option value="">Select Type</option>
+                                    <option value="EV">EV</option>
+                                    <option value="CNG">CNG</option>
+                                </select>
+                                <div class="text-rose-500 text-sm mt-1 hidden" id="vehicle2Error"></div>
+                            </div>
+                            <div class="vehicle-input mb-2">
+                                <label class="block mb-1">Vehicle 3 (Optional)</label>
+                                <input type="text"
+                                    class="vehicle-number w-full p-2 border rounded-lg text-gray-900 dark:text-white bg-white dark:bg-gray-700 mb-1"
+                                    placeholder="Vehicle Number (e.g., MH-12-AB-1234)" data-index="3">
+                                <select
+                                    class="vehicle-type w-full p-2 border rounded-lg text-gray-900 dark:text-white bg-white dark:bg-gray-700"
+                                    data-index="3">
+                                    <option value="">Select Type</option>
+                                    <option value="EV">EV</option>
+                                    <option value="CNG">CNG</option>
+                                </select>
+                                <div class="text-rose-500 text-sm mt-1 hidden" id="vehicle3Error"></div>
+                            </div>
+                            <div class="vehicle-input mb-2">
+                                <label class="block mb-1">Vehicle 4 (Optional)</label>
+                                <input type="text"
+                                    class="vehicle-number w-full p-2 border rounded-lg text-gray-900 dark:text-white bg-white dark:bg-gray-700 mb-1"
+                                    placeholder="Vehicle Number (e.g., MH-12-AB-1234)" data-index="4">
+                                <select
+                                    class="vehicle-type w-full p-2 border rounded-lg text-gray-900 dark:text-white bg-white dark:bg-gray-700"
+                                    data-index="4">
+                                    <option value="">Select Type</option>
+                                    <option value="EV">EV</option>
+                                    <option value="CNG">CNG</option>
+                                </select>
+                                <div class="text-rose-500 text-sm mt-1 hidden" id="vehicle4Error"></div>
+                            </div>
+                            <div class="vehicle-input mb-2">
+                                <label class="block mb-1">Vehicle 5 (Optional)</label>
+                                <input type="text"
+                                    class="vehicle-number w-full p-2 border rounded-lg text-gray-900 dark:text-white bg-white dark:bg-gray-700 mb-1"
+                                    placeholder="Vehicle Number (e.g., MH-12-AB-1234)" data-index="5">
+                                <select
+                                    class="vehicle-type w-full p-2 border rounded-lg text-gray-900 dark:text-white bg-white dark:bg-gray-700"
+                                    data-index="5">
+                                    <option value="">Select Type</option>
+                                    <option value="EV">EV</option>
+                                    <option value="CNG">CNG</option>
+                                </select>
+                                <div class="text-rose-500 text-sm mt-1 hidden" id="vehicle5Error"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit" id="registerSubmitBtn"
+                        class="w-full p-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700">
+                        <span class="btn-text">Register</span>
+                        <span class="loading hidden">Loading...</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Booking Modal -->
+    <div id="bookingModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-30">
+        <div
+            class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg max-w-md w-full transform scale-95 transition-transform duration-300">
+            <span id="closeModal" class="float-right text-2xl cursor-pointer">×</span>
+            <form id="bookingForm">
+                <h2 id="modalStationName" class="text-xl font-semibold mb-4"></h2>
+                <img id="modalStationImage" class="w-full h-24 object-cover rounded-lg mb-4" src="" alt="Station Image">
+                <p class="mb-2"><strong>Location:</strong> <span id="modalStationLocation"></span></p>
+                <p class="mb-2"><strong>Type:</strong> <span id="modalStationType"
+                        class="station-type-badge px-2 py-1 rounded text-white"></span></p>
+                <p class="mb-2"><strong>Status:</strong> <span id="modalStationStatus"
+                        class="status-badge px-2 py-1 rounded text-white"></span></p>
+                <h3 class="text-lg font-semibold mb-2">Select Time Slot</h3>
+                <div id="timeSlots" class="grid grid-cols-3 gap-2 mb-4"></div>
+                <div id="vehicleSelection" class="mb-4">
+                    <label for="vehicleSelect" class="block mb-1">Select Vehicle</label>
+                    <select id="vehicleSelect"
+                        class="w-full p-2 border rounded-lg text-gray-900 dark:text-white bg-white dark:bg-gray-700">
+                        <option value="">Select a vehicle</option>
+                    </select>
+                </div>
+                <button type="submit" id="confirmBooking"
+                    class="w-full p-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700">
+                    <span class="btn-text">Confirm Booking</span>
+                    <span class="loading hidden">Loading...</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Manage Vehicles Modal -->
+    <div id="manageVehiclesModal"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-30">
+        <div
+            class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg max-w-md w-full transform scale-95 transition-transform duration-300">
+            <span id="closeManageVehiclesModal" class="float-right text-2xl cursor-pointer">×</span>
+            <h2 class="text-xl font-semibold mb-4">Manage Vehicles</h2>
+            <div id="currentVehicles" class="mb-4"></div>
+            <div id="addVehicleSection" class="mb-4">
+                <h3 class="text-lg font-semibold mb-2">Add New Vehicle</h3>
+                <div class="text-rose-500 text-sm mb-2 hidden" id="addVehicleError"></div>
+                <div class="mb-2">
+                    <label class="block mb-1">Vehicle Number</label>
+                    <input type="text" id="newVehicleNumber"
+                        class="w-full p-2 border rounded-lg text-gray-900 dark:text-white bg-white dark:bg-gray-700"
+                        placeholder="e.g., MH-12-AB-1234">
+                </div>
+                <div class="mb-2">
+                    <label class="block mb-1">Vehicle Type</label>
+                    <select id="newVehicleType"
+                        class="w-full p-2 border rounded-lg text-gray-900 dark:text-white bg-white dark:bg-gray-700">
+                        <option value="">Select Type</option>
+                        <option value="EV">EV</option>
+                        <option value="CNG">CNG</option>
+                    </select>
+                </div>
+                <button id="addVehicleBtn" class="w-full p-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700">
+                    <span class="btn-text">Add Vehicle</span>
+                    <span class="loading hidden">Loading...</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="fixed bottom-4 right-4 p-4 rounded-lg text-white hidden z-40">
+        <span id="toastMessage"></span>
+    </div>
+
+    <style>
+        @keyframes slide-in-left {
+            from {
+                transform: translateX(-20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .animate-slide-in-left {
+            animation: slide-in-left 0.5s ease forwards;
+        }
+
+        body.sidebar-open main {
+            margin-left: 0;
+        }
+
+        @media (min-width: 768px) {
+            body.sidebar-open main {
+                margin-left: 16rem;
+                /* 64 = 256px, sidebar width */
+            }
+        }
+
+        /* Google Maps styling */
+        #map {
+            z-index: 0;
+        }
+        
+        .gm-style {
+            z-index: 0 !important;
+        }
+    </style>
+
+    <script src="script.js" onerror="console.error('Failed to load script.js');"></script>
+</body>
+
+</html>
